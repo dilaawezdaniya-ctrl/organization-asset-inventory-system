@@ -20,3 +20,17 @@ Therefore, computer/security information will be handled separately from the mai
 ### Decision 5: Department Assets Are Derived From Asset Records
 The system should not require users to manually enter a list of assets owned by a department.
 Department assets will be determined from the assets linked to that department.
+
+## September 7, 2026
+
+### Decision 6: Computer Details are Separate From Asset
+Computer-specific information such as processor, RAM, storage and operating system
+will be stored separately because these details only apply to computer assets.
+
+### Decision 7: Security Details are Separate From Computer Details
+Antivirus, firewall, security status and security-check information will be stored
+in a separate table so security information can be expanded independently.
+
+### Decision 8: Supplier Information is Stored Separately
+Supplier information will be stored in a separate table because one supplier can
+provide many purchases and assets.
