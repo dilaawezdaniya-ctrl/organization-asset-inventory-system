@@ -1,0 +1,54 @@
+# Product Decision Log
+
+## September 6, 2026
+
+### Decision 1: Serial Number is Optional
+Not every physical asset has a manufacturer serial number.
+Therefore, serial number will not be mandatory.
+
+### Decision 2: Department Name is Unique Within an Organization
+Two different organizations may have departments with the same name.
+Therefore, department names only need to be unique within the same organization.
+
+### Decision 3: Asset Location is Linked to Room
+Assets should be connected to rooms so the system can track their current location.
+
+### Decision 4: Security Information is Separate From Asset Information
+Firewall, antivirus and other security information mainly applies to IT assets.
+Therefore, computer/security information will be handled separately from the main Asset table.
+
+### Decision 5: Department Assets Are Derived From Asset Records
+The system should not require users to manually enter a list of assets owned by a department.
+Department assets will be determined from the assets linked to that department.
+
+## September 7, 2026
+
+### Decision 6: Computer Details are Separate From Asset
+Computer-specific information such as processor, RAM, storage and operating system
+will be stored separately because these details only apply to computer assets.
+
+### Decision 7: Security Details are Separate From Computer Details
+Antivirus, firewall, security status and security-check information will be stored
+in a separate table so security information can be expanded independently.
+
+### Decision 8: Supplier Information is Stored Separately
+Supplier information will be stored in a separate table because one supplier can
+provide many purchases and assets.
+
+## September 8, 2026
+
+### Decision 9: Purchase and Purchase Items are Separate
+Purchase information and the individual items within a purchase will be stored separately.
+One purchase can contain multiple purchase items.
+
+### Decision 10: Purchased Trackable Items Become Individual Assets
+Trackable physical items such as laptops will be represented as individual Asset records,
+even when multiple units are purchased together.
+
+### Decision 11: Purchase-to-Asset Traceability
+Each asset should be linked to the purchase item from which it was purchased.
+This allows the organization to trace an asset back to its purchase and supplier.
+
+### Decision 12: Invoice Number is Unique
+Each purchase invoice number must be unique to prevent the same invoice from being
+recorded multiple times.
