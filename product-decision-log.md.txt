@@ -52,3 +52,22 @@ This allows the organization to trace an asset back to its purchase and supplier
 ### Decision 12: Invoice Number is Unique
 Each purchase invoice number must be unique to prevent the same invoice from being
 recorded multiple times.
+
+## September 9, 2026
+
+### Decision 13: Employee Information is Separate From Asset Information
+Employee records will be stored separately from asset records.
+An employee can have multiple assets over time.
+
+### Decision 14: Assignment is Stored as a Separate Record
+Asset assignments will be stored in a separate Assignment table instead of
+storing employee information directly in the Asset table.
+
+### Decision 15: Assignment History is Preserved
+When an asset is returned, the assignment record will not be deleted.
+The return date and assignment status will be updated so the organization
+can maintain historical records.
+
+### Decision 16: Asset Status Reflects Current Availability
+An asset's status will indicate its current state, such as Available,
+Assigned, Under Maintenance, Damaged, or Disposed.
