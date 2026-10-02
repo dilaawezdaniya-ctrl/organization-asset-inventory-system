@@ -301,3 +301,283 @@ The transaction type determines how the quantity affects current stock:
 
 * STOCK_IN → current quantity + transaction quantity
 * STOCK_OUT → current quantity - transaction quantity
+
+## Consumable Inventory Management — Continued
+
+> **Note:** Decision 43 (Purchase Reference for Stock In) remains pending confirmation and is intentionally not recorded as a finalized decision below.
+
+### Decision 44: Consumable Category Structure
+
+The `consumable_category` table will contain a unique category ID, a unique category name, and an optional description.
+
+### Decision 45: Consumable Table
+
+The `consumable` table will store:
+
+* `consumable_id`
+* `consumable_code`
+* `consumable_name`
+* `category_id`
+* `unit_id`
+* `current_quantity`
+* `minimum_stock_level`
+* `room_id`
+
+Stock status will be derived rather than stored.
+
+### Decision 46: Decimal Stock Quantities
+
+Consumable stock quantities and stock transaction quantities will support decimal values using `DECIMAL(12,2)`.
+
+This allows quantities such as `100.00 Packs` or `12.50 Litres`.
+
+### Decision 47: Controlled Measurement Units
+
+Consumables will use a controlled measurement-unit table.
+
+Each consumable will reference a `unit_id` instead of storing the unit as free text.
+
+### Decision 48: Unit Table Structure
+
+The `unit` table will contain:
+
+* `unit_id`
+* `unit_name`
+* `abbreviation`
+
+Both `unit_name` and `abbreviation` will be unique.
+
+### Decision 49: Inactive Measurement Units
+
+The `unit` table will include `is_active`.
+
+Inactive units cannot be assigned to new consumables but remain available for existing records and historical transactions.
+
+Inactive units may be reactivated later.
+
+### Decision 50: Inactive Consumable Categories
+
+The `consumable_category` table will include `is_active`.
+
+Inactive categories cannot be assigned to new consumables but remain available for existing records and can be reactivated later.
+
+### Decision 51: Organization Ownership of Consumables
+
+Each consumable will directly reference its `organization_id` to establish ownership.
+
+The `room_id` will continue to represent the physical storage location.
+
+### Decision 52: Organization and Storage Location Consistency
+
+A consumable's `room_id` must belong to the same organization as its `organization_id`.
+
+The system must prevent assigning a consumable to a room belonging to another organization.
+
+### Decision 53: Consumable Code Uniqueness
+
+`consumable_code` must be unique within an organization.
+
+The same consumable code may be reused by different organizations.
+
+### Decision 54: Consumable Active Status
+
+Each consumable will have an `is_active` field.
+
+Inactive consumables cannot be used in new stock transactions but remain available for historical records and may be reactivated later.
+
+### Decision 55: Inactive Consumables Cannot Receive New Transactions
+
+The system will reject new `STOCK_IN` and `STOCK_OUT` transactions for inactive consumables.
+
+Existing historical transactions remain preserved.
+
+### Decision 56: Stock Transaction Identity
+
+Each stock movement will have a unique `transaction_id` as its database primary key.
+
+Each transaction will reference:
+
+* the consumable
+* the transaction type
+* the transaction quantity
+
+### Decision 57: Stock Quantity Snapshots
+
+Each stock transaction will store:
+
+* transaction quantity
+* `quantity_before`
+* `quantity_after`
+
+These values provide a direct audit snapshot of stock immediately before and after the transaction.
+
+### Decision 58: Stock Transaction Timestamp
+
+Every stock transaction will record the exact date and time of the stock movement using `transaction_datetime`.
+
+This allows transactions occurring on the same day to be correctly ordered.
+
+### Decision 59: Stock Transaction Performed By
+
+Each stock transaction will record the application user who performed it using `performed_by_user_id`.
+
+This will reference the application user/authentication structure rather than the employee table.
+
+### Decision 60: STOCK_OUT Can Reference a Request
+
+When a consumable is issued against a formal department request, the `STOCK_OUT` transaction should reference that request.
+
+The request will be stored as a separate record.
+
+### Decision 61: Consumable Requests are Optional for STOCK_OUT
+
+A `STOCK_OUT` transaction may be created either from a formal consumable request or as an authorized direct issue.
+
+When a request exists, the transaction will reference it.
+
+When no request exists, the request reference remains optional.
+
+### Decision 62: Request Approval and Physical Issue are Separate
+
+Approval of a consumable request will not automatically create a `STOCK_OUT`.
+
+`STOCK_OUT` will be recorded when the Inventory Manager actually issues the consumable.
+
+### Decision 63: Partial Stock Issue
+
+A consumable request may be fulfilled through multiple `STOCK_OUT` transactions.
+
+The request will track requested, issued, and remaining quantities until it is fully fulfilled or otherwise closed.
+
+### Decision 64: Consumable Request Status
+
+Consumable requests will use the following statuses:
+
+* `PENDING`
+* `APPROVED`
+* `PARTIALLY_FULFILLED`
+* `COMPLETED`
+* `CANCELLED`
+
+The normal fulfillment flow is:
+
+`PENDING → APPROVED → PARTIALLY_FULFILLED → COMPLETED`
+
+### Decision 65: Consumable Request Basic Identity
+
+Each consumable request will have:
+
+* `request_id`
+* `request_code`
+* request timestamp
+* requesting department
+* requesting system user
+* status
+* reason
+* optional remarks
+
+`request_id` is the database identity.
+
+`request_code` is the human-facing request identifier.
+
+### Decision 66: Multiple Consumables per Request
+
+A consumable request can contain multiple consumables.
+
+Request-level information will be stored in `consumable_request`.
+
+Each requested consumable and its quantity will be stored in `consumable_request_item`.
+
+### Decision 67: Request Item Quantities
+
+Each `consumable_request_item` will store:
+
+* `requested_quantity`
+* `issued_quantity`
+
+Remaining quantity will be calculated as:
+
+`requested_quantity - issued_quantity`
+
+### Decision 68: Request Quantity Validation
+
+Each request item must have a requested quantity greater than zero.
+
+Issued quantity must be zero or greater and cannot exceed requested quantity.
+
+### Decision 69: No Duplicate Consumables in One Request
+
+A single consumable can appear only once within a consumable request.
+
+Duplicate request items for the same consumable are not allowed.
+
+### Decision 70: Request Editing
+
+A consumable request can be edited only while its status is `PENDING`.
+
+Once approved, partially fulfilled, completed, or cancelled, the request becomes read-only.
+
+### Decision 71: Request Cancellation Permissions
+
+The requesting Department Head may cancel `PENDING` requests.
+
+The Inventory Manager may cancel `APPROVED` or `PARTIALLY_FULFILLED` requests.
+
+Completed requests cannot be cancelled.
+
+Cancelled requests cannot be cancelled again.
+
+### Decision 72: Request Approval User
+
+An approved consumable request will record:
+
+* `approved_by_user_id`
+* `approved_at`
+
+These fields remain empty until the request is approved.
+
+### Decision 73: Request Cancellation Information
+
+A cancelled consumable request will record:
+
+* `cancelled_by_user_id`
+* `cancelled_at`
+* `cancellation_reason`
+
+These fields remain empty for requests that have not been cancelled.
+
+### Decision 74: Request Submission Timestamp
+
+Each consumable request will store the exact submission date and time using `requested_at`.
+
+### Decision 75: Request Organization
+
+Each consumable request will directly reference `organization_id`.
+
+The request, requesting department, and requested consumables must belong to the same organization.
+
+### Decision 76: Request Code Uniqueness
+
+`request_code` must be unique within an organization.
+
+The same request code may be reused by different organizations.
+
+### Decision 77: Request Item Organization Validation
+
+Every consumable request item must reference a consumable belonging to the same organization as the parent request.
+
+### Decision 78: Request Item Fulfillment Status is Derived
+
+Request-item fulfillment status will be derived from requested and issued quantities rather than stored as a separate database field.
+
+Examples:
+
+* `issued_quantity = 0` → Not Fulfilled
+* `0 < issued_quantity < requested_quantity` → Partially Fulfilled
+* `issued_quantity = requested_quantity` → Fully Fulfilled
+
+### Decision 79: Request Item Editing
+
+Consumable request items may be added, edited, or removed only while the parent request is `PENDING`.
+
+After approval, request items become read-only.
