@@ -100,3 +100,204 @@ later workflow requires it to be returned to a previous user.
 ### Decision 21: Current Asset State and Historical Events are Separate
 The Asset table represents the asset's current state, while transaction tables
 such as Assignment, Asset Transfer and Maintenance preserve historical events.
+
+## September 2026 — Consumable Inventory Management
+
+### Decision 22: Consumables are Separate From Trackable Assets
+
+Consumables will be managed separately from trackable assets.
+
+Trackable assets such as laptops, printers and projectors are individually identified and managed through Asset records.
+
+Consumables such as printer paper, toner and stationery are quantity-based inventory and will be managed through stock quantities and transactions.
+
+### Decision 23: Inventory Manager Controls Stock Issuing
+
+The Inventory Manager will be responsible for receiving and issuing consumable stock.
+
+The Department Head can request consumables, while the Inventory Manager records the actual stock issue.
+
+Workflow:
+
+Department Head → Request → Inventory Manager → Approve/Issue → Stock Transaction → Current Quantity Updated
+
+### Decision 24: Consumables Have a Storage Location
+
+Each consumable inventory item will have a physical storage location.
+
+The existing Building → Room structure will be used instead of storing a free-text location.
+
+### Decision 25: Stock Changes are Recorded as Transactions
+
+Every consumable stock movement will be stored as a separate transaction.
+
+STOCK_IN adds quantity to inventory.
+
+STOCK_OUT removes quantity from inventory.
+
+Transaction history will preserve stock movement information instead of overwriting previous records.
+
+### Decision 26: Current Stock Quantity is Stored
+
+Each consumable will store its current quantity directly.
+
+Every STOCK_IN or STOCK_OUT transaction will update the current quantity.
+
+Transaction records will preserve the historical stock movements.
+
+Stock quantity must never become negative.
+
+### Decision 27: Low Stock is Based on Minimum Stock Level
+
+Each consumable will have a minimum stock level.
+
+Low Stock is determined when:
+
+Current Quantity <= Minimum Stock Level
+
+When current quantity reaches zero, the consumable is considered Out of Stock.
+
+### Decision 28: Consumables Use a Defined Unit
+
+Each consumable will have a defined unit of measurement.
+
+Examples include:
+
+* Pack
+* Piece
+* Cartridge
+* Bottle
+
+The unit will be used when recording and displaying stock quantities.
+
+### Decision 29: STOCK_OUT Records the Receiving Department
+
+Every STOCK_OUT transaction will record the department receiving the consumable.
+
+This allows department-wise consumption tracking and reporting.
+
+STOCK_IN does not require a department because received stock enters central inventory.
+
+### Decision 30: Purchase-to-Stock Traceability
+
+Consumable STOCK_IN transactions will be connected to the existing purchase_item records.
+
+The workflow is:
+
+Purchase → Purchase Item → Stock In → Current Stock
+
+This provides traceability from inventory stock back to the purchase and supplier without creating a separate purchasing system.
+
+### Decision 31: Consumables Use a Separate Category Table
+
+Consumables will use a dedicated consumable_category table rather than the existing asset category table.
+
+This keeps asset classification and consumable classification separate.
+
+Examples of consumable categories include:
+
+* Stationery
+* Printing
+* Cleaning
+* Electrical
+
+### Decision 32: Consumable Identity
+
+Each consumable will have:
+
+* Database ID
+* Unique consumable code
+* Consumable name
+* Consumable category
+* Unit
+
+The database ID is used for database identity, while the consumable code is intended for human-facing identification, searching and labels.
+
+### Decision 33: Quantity and Stock Level
+
+Each consumable will store:
+
+* Current Quantity
+* Minimum Stock Level
+
+Current quantity represents the available stock.
+
+Minimum stock level represents the threshold used to determine Low Stock.
+
+### Decision 34: Consumable Storage Uses Room
+
+Each consumable will be linked to a physical room using room_id.
+
+The existing organization location structure will therefore be reused:
+
+Building → Room → Consumable
+
+This avoids inconsistent free-text locations.
+
+### Decision 35: Stock Transaction Type
+
+Every stock movement will be stored as a separate transaction.
+
+The transaction type will be one of:
+
+* STOCK_IN
+* STOCK_OUT
+
+STOCK_IN increases current stock.
+
+STOCK_OUT decreases current stock.
+
+### Decision 36: Stock Transaction Date
+
+Every stock transaction will store the date on which the stock movement actually occurred.
+
+This supports stock history, reporting, consumption analysis and auditing.
+
+### Decision 37: Department for STOCK_OUT
+
+Every STOCK_OUT transaction will record the receiving department_id.
+
+STOCK_IN does not require a department because stock is received into central inventory.
+
+### Decision 38: Stock Transaction User
+
+Stock transactions will eventually record the system user who performed the transaction.
+
+The application user/role system will be used for this purpose rather than directly using the employee table.
+
+This keeps employee information separate from application access control.
+
+### Decision 39: Stock Transaction Reason and Remarks
+
+Every stock transaction will have a reason.
+
+An optional remarks field will allow additional details to be recorded.
+
+The reason supports structured reporting and filtering, while remarks provide additional context.
+
+### Decision 40: Prevent Negative Stock
+
+A STOCK_OUT transaction cannot be completed when the requested quantity is greater than the current available quantity.
+
+Stock quantity must never become negative.
+
+### Decision 41: Stock Status is Derived
+
+Stock status will not be stored as a separate database field.
+
+It will be calculated from current_quantity and minimum_stock_level.
+
+Examples:
+
+* Current Quantity > Minimum Stock Level → Normal
+* Current Quantity <= Minimum Stock Level → Low Stock
+* Current Quantity = 0 → Out of Stock
+
+### Decision 42: Transaction Quantity Validation
+
+Every stock transaction must have a quantity greater than zero.
+
+The transaction type determines how the quantity affects current stock:
+
+* STOCK_IN → current quantity + transaction quantity
+* STOCK_OUT → current quantity - transaction quantity
